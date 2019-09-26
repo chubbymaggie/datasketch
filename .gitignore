@@ -58,3 +58,11 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Documentation
+.doctrees
+_build
+doctrees
+
+# Jetbrains
+.idea

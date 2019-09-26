@@ -14,19 +14,29 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+# Get the code version
+version = {}
+with open(path.join(here, "datasketch/version.py")) as fp:
+    exec(fp.read(), version)
+__version__ = version['__version__']
+# now we have a `__version__` variable
+
+test_requires = ['coverage', 'mock>=2.0.0']
+
 setup(
     name='datasketch',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.1.26',
 
-    description='Probabilistic data structures for processing very large datasets',
+    version=__version__,
+
+    description='Probabilistic data structures for processing and searching very large datasets',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/ekzhu/datasketch',
+    url='https://ekzhu.github.io/datasketch',
 
     # Author details
     author='ekzhu',
@@ -41,7 +51,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
@@ -53,13 +63,13 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 
     # What does your project relate to?
@@ -67,29 +77,29 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['contrib', 'docs', 'test*', 'benchmarks',
-            'examples']),
+    packages=find_packages(exclude=['contrib', 'docs', 'test*', 'benchmarks', 'examples', 'docsrc']),
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy'],
+    install_requires=['numpy>=1.11', 'redis>=2.10.0'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
-    # $ pip install -e .[dev,test]
+    # $ pip install -e .[dev,test,aio,aio-test]
     extras_require={
         'dev': ['check-manifest'],
-        'test': ['coverage'],
+        'test': test_requires + ['mockredispy', 'nose-exclude'],
+        'experimental_aio': ["aiounittest ; python_version>='3.6'", "motor ; python_version>='3.6'"],
     },
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
     package_data={
-    #    'sample': ['package_data.dat'],
+        #    'sample': ['package_data.dat'],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may
@@ -102,8 +112,8 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-    #    'console_scripts': [
-    #        'sample=sample:main',
-    #    ],
+        #    'console_scripts': [
+        #        'sample=sample:main',
+        #    ],
     },
 )

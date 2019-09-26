@@ -2,11 +2,11 @@
 This module implements the b-bit MinHash.
 http://research.microsoft.com/pubs/120078/wfc0398-liPS.pdf
 
-b-bit MinHash reduces storage space by storing only the b lowest bits 
+b-bit MinHash reduces storage space by storing only the b lowest bits
 of each minimum hashed value, without significant loss of accuracy.
 '''
 
-import struct 
+import struct
 import numpy as np
 
 class bBitMinHash(object):
@@ -14,11 +14,11 @@ class bBitMinHash(object):
     The b-bit MinHash object
     '''
 
-    __slots__ = ('seed', 'b', 'r', 'hashvalues')  
+    __slots__ = ('seed', 'b', 'r', 'hashvalues')
 
     # seed as int64
     # b as uint8
-    # r as float64 
+    # r as float64
     # num_perm as int32
     _serial_fmt_params = '<qBdi'
     # each block as uint64
@@ -47,9 +47,12 @@ class bBitMinHash(object):
         '''
         Check for full equality of two b-bit MinHash objects.
         '''
-        return self.seed == other.seed and self.b == other.b and \
-                self.r == other.r and \
-                np.array_equal(self.hashvalues, other.hashvalues)
+        return type(self) is type(other) and \
+            self.seed == other.seed and \
+            self.b == other.b and \
+            self.r == other.r and \
+            np.array_equal(self.hashvalues, other.hashvalues)
+
 
     def jaccard(self, other):
         '''
@@ -67,7 +70,7 @@ class bBitMinHash(object):
         a1 = self._calc_a(self.r, self.b)
         a2 = self._calc_a(other.r, other.b)
         c1, c2 = self._calc_c(a1, a2, self.r, other.r)
-        return (raw_est - c1) / (1 - c2) 
+        return (raw_est - c1) / (1 - c2)
 
     def bytesize(self):
         '''
@@ -87,7 +90,7 @@ class bBitMinHash(object):
             # Obtain the current segment of n hashed values
             start = i * n
             hvs = self.hashvalues[start:start+n]
-            # Store the n b-bit hashed values in the current block 
+            # Store the n b-bit hashed values in the current block
             for j, hv in enumerate(hvs):
                 blocks[i] |= np.uint64(hv << (n - 1 - j) * slot_size)
         fmt = self._serial_fmt_params + \
@@ -96,19 +99,26 @@ class bBitMinHash(object):
                 self.hashvalues.size, *blocks)
         return buffer
 
-    def __setstate__(self, buffer):
+    def __setstate__(self, buf):
         '''
         This function is called when unpickling the b-bit MinHash object.
         Initialize the object with data in the buffer.
         '''
-        self.seed, self.b, self.r, num_perm = \
-                struct.unpack_from(self._serial_fmt_params, buffer, 0)
+        try:
+            self.seed, self.b, self.r, num_perm = \
+                    struct.unpack_from(self._serial_fmt_params, buf, 0)
+        except TypeError:
+            self.seed, self.b, self.r, num_perm = \
+                    struct.unpack_from(self._serial_fmt_params, buffer(buf), 0)
         offset = struct.calcsize(self._serial_fmt_params)
         self.hashvalues = np.zeros((num_perm,), dtype=np.uint32)
         # Reconstruct the hash values
         slot_size, n, num_blocks, total = self._bytesize()
         fmt = "%d%s" % (num_blocks, self._serial_fmt_block)
-        blocks = struct.unpack_from(fmt, buffer, offset)
+        try:
+            blocks = struct.unpack_from(fmt, buf, offset)
+        except TypeError:
+            blocks = struct.unpack_from(fmt, buffer(buf), offset)
         mask = (1 << slot_size) - 1
         for i in range(num_blocks):
             start = i * n
@@ -133,13 +143,13 @@ class bBitMinHash(object):
             # Find the limits of C1 and C2 as r1 -> 0 and r2 -> 0
             # Since the b-value must be the same and r1 = r2,
             # we have A1(r1, b1) = A2(r2, b2) = A,
-            # then the limits for both C1 and C2 are A. 
+            # then the limits for both C1 and C2 are A.
             return a1, a2
         div = 1 / (r1 + r2)
         c1 = (a1 * r2 + a2 * r1) * div
         c2 = (a1 * r1 + a2 * r2) * div
         return c1, c2
-    
+
     def _find_slot_size(self, b):
         if b == 1:
             return 1
